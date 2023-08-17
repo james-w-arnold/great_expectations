@@ -6,9 +6,11 @@ For detailed instructions on how to use it, please see:
 from typing import Optional
 
 from stdnum import ean
+from pyspark.sql.types import BooleanType
+from pyspark.sql.functions import udf
 
 from great_expectations.core.expectation_configuration import ExpectationConfiguration
-from great_expectations.execution_engine import PandasExecutionEngine
+from great_expectations.execution_engine import PandasExecutionEngine, SparkDFExecutionEngine
 from great_expectations.expectations.expectation import ColumnMapExpectation
 from great_expectations.expectations.metrics import (
     ColumnMapMetricProvider,
@@ -22,7 +24,6 @@ def is_valid_ean(ean_num: str) -> bool:
     except Exception:
         return False
     return True
-
 
 # This class defines a Metric to support your Expectation.
 # For most ColumnMapExpectations, the main business logic for calculation will live in this class.
@@ -41,9 +42,9 @@ class ColumnValuesToBeValidEan(ColumnMapMetricProvider):
     #     raise NotImplementedError
 
     # This method defines the business logic for evaluating your metric when using a SparkDFExecutionEngine
-    # @column_condition_partial(engine=SparkDFExecutionEngine)
-    # def _spark(cls, column, **kwargs):
-    #     raise NotImplementedError
+    @column_condition_partial(engine=SparkDFExecutionEngine)
+    def _spark(cls, column, **kwargs):
+        return udf(is_valid_ean, BooleanType())(column)
 
 
 # This class defines the Expectation itself
